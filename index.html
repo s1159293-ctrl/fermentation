@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>發酵科學模擬器</title>
+    
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 引入 React 和 ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- 引入 Babel 用於在瀏覽器中編譯 JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- 引入 Lucide 圖標 -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; }
+        .list-circle { list-style-type: circle; }
+        
+        /* 簡單的動畫類別，因為 Tailwind CDN 可能沒包這些進階動畫 */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .animate-in.fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        
+        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .animate-in.zoom-in { animation: zoomIn 0.3s ease-out forwards; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // 手動建立 Lucide 圖標組件，因為 CDN 不直接支援 React 組件匯出
+        const Icon = ({ name, size = 24, className = '', ...props }) => {
+            const iconHtml = lucide.createIcons({
+                icons: { [name]: lucide.icons[name] },
+                nameAttr: 'data-lucide'
+            });
+            return (
+                <i 
+                    data-lucide={name} 
+                    style={{ width: size, height: size }} 
+                    className={`inline-block ${className}`}
+                    {...props}
+                ></i>
+            );
+        };
+
+        // 為每個圖標建立一個包裝組件
+        const FlaskConical = (props) => <Icon name="FlaskConical" {...props} />;
+        const Sparkles = (props) => <Icon name="Sparkles" {...props} />;
+        const Factory = (props) => <Icon name="Factory" {...props} />;
+        const Beaker = (props) => <Icon name="Beaker" {...props} />;
+        const ThermometerSun = (props) => <Icon name="ThermometerSun" {...props} />;
+        const Microscope = (props) => <Icon name="Microscope" {...props} />;
+        const Recycle = (props) => <Icon name="Recycle" {...props} />;
+        const Droplets = (props) => <Icon name="Droplets" {...props} />;
+        const Wind = (props) => <Icon name="Wind" {...props} />;
+        const CheckCircle2 = (props) => <Icon name="CheckCircle2" {...props} />;
+        const ChevronRight = (props) => <Icon name="ChevronRight" {...props} />;
+        const Play = (props) => <Icon name="Play" {...props} />;
+        const RefreshCcw = (props) => <Icon name="RefreshCcw" {...props} />;
+        const Award = (props) => <Icon name="Award" {...props} />;
+        const Flame = (props) => <Icon name="Flame" {...props} />;
+        const Bug = (props) => <Icon name="Bug" {...props} />;
+        const Package = (props) => <Icon name="Package" {...props} />;
+        const ShieldCheck = (props) => <Icon name="ShieldCheck" {...props} />;
+
+        function App() {
+            const [currentScene, setCurrentScene] = useState('intro');
+            
+            useEffect(() => {
+                // 當場景切換時，重新渲染圖標
+                lucide.createIcons();
+            }, [currentScene]);
+
+            const goTo = (scene) => setCurrentScene(scene);
+
+            return (
+                <div className="min-h-screen bg-slate-100 font-sans text-slate-800 flex flex-col">
+                <header className="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center overflow-x-auto">
+                    <div className="flex items-center gap-2 text-xl font-bold whitespace-nowrap mr-4">
+                    <FlaskConical size={28} />
+                    <span>發酵科學模擬器</span>
+                    </div>
+                    <nav className="flex gap-2 sm:gap-4 whitespace-nowrap">
+                    <button onClick={() => goTo('intro')} className={`px-3 py-1 rounded-full text-sm sm:text-base font-bold ${currentScene === 'intro' ? 'bg-white text-blue-600' : 'hover:bg-blue-500'}`}>1. 知識學堂</button>
+                    <button onClick={() => goTo('factory')} className={`px-3 py-1 rounded-full text-sm sm:text-base font-bold ${currentScene === 'factory' ? 'bg-white text-blue-600' : 'hover:bg-blue-500'}`}>2. 工廠模擬</button>
+                    <button onClick={() => goTo('applications')} className={`px-3 py-1 rounded-full text-sm sm:text-base font-bold ${currentScene === 'applications' ? 'bg-white text-blue-600' : 'hover:bg-blue-500'}`}>3. 兩大應用</button>
+                    <button onClick={() => goTo('experiment')} className={`px-3 py-1 rounded-full text-sm sm:text-base font-bold ${currentScene === 'experiment' ? 'bg-white text-blue-600' : 'hover:bg-blue-500'}`}>4. 氣球實驗</button>
+                    <button onClick={() => goTo('quiz')} className={`px-3 py-1 rounded-full text-sm sm:text-base font-bold ${currentScene === 'quiz' ? 'bg-white text-blue-600' : 'hover:bg-blue-500'}`}>5. 小測驗</button>
+                    </nav>
+                </header>
+
+                <main className="flex-grow flex items-center justify-center p-4">
+                    <div className="w-full max-w-4xl bg-white rounded-3xl shadow-xl overflow-hidden relative">
+                    {currentScene === 'intro' && <IntroScene onNext={() => goTo('factory')} />}
+                    {currentScene === 'factory' && <FactoryScene onNext={() => goTo('applications')} />}
+                    {currentScene === 'applications' && <ApplicationsScene onNext={() => goTo('experiment')} />}
+                    {currentScene === 'experiment' && <ExperimentScene onNext={() => goTo('quiz')} />}
+                    {currentScene === 'quiz' && <QuizScene onRestart={() => goTo('intro')} />}
+                    </div>
+                </main>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // Scene 1: Intro
+        // ==========================================
+        function IntroScene({ onNext }) {
+            useEffect(() => { lucide.createIcons(); }, []);
+            return (
+                <div className="p-8 md:p-12 text-center animate-in fade-in duration-500">
+                <div className="bg-yellow-100 text-yellow-600 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Sparkles size={48} />
+                </div>
+                <h1 className="text-4xl font-extrabold mb-6 text-blue-800">什麼是發酵？</h1>
+                
+                <div className="grid md:grid-cols-2 gap-8 text-left mb-8">
+                    <div className="bg-blue-50 p-6 rounded-2xl border-2 border-blue-200 shadow-sm">
+                    <h3 className="text-xl font-bold text-blue-700 mb-3 flex items-center gap-2">
+                        <Microscope /> 科學定義
+                    </h3>
+                    <p className="text-lg">發酵是一種<strong>代謝過程</strong>。微生物透過體內的<strong>酶（酵素）</strong>，將有機物質分解，產生化學變化的過程。</p>
+                    </div>
+                    
+                    <div className="bg-green-50 p-6 rounded-2xl border-2 border-green-200 shadow-sm">
+                    <h3 className="text-xl font-bold text-green-700 mb-3 flex items-center gap-2">
+                        <Sparkles /> 小學生翻譯
+                    </h3>
+                    <p className="text-lg">簡單來說，發酵就是微生物的魔法<strong>「消化與變身」遊戲</strong>！細菌或酵母菌吃下糖分後，就像用化學小剪刀把食物變成全新的東西！</p>
+                    </div>
+                </div>
+
+                <button 
+                    onClick={onNext}
+                    className="bg-orange-500 hover:bg-orange-600 text-white text-xl font-bold py-4 px-10 rounded-full shadow-lg transform hover:scale-105 transition-all flex items-center justify-center gap-2 mx-auto"
+                >
+                    進入益力多工廠 <ChevronRight size={28} />
+                </button>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // Scene 2: Factory Simulator
+        // ==========================================
+        function FactoryScene({ onNext }) {
+            const [step, setStep] = useState(0);
+            const [taskCompleted, setTaskCompleted] = useState(false);
+            
+            const [s0_milk, setS0_milk] = useState(false);
+            const [s0_sugar, setS0_sugar] = useState(false);
+            const [s1_temp, setS1_temp] = useState(25);
+            const [s2_bacteria, setS2_bacteria] = useState(0);
+            const [s3_progress, setS3_progress] = useState(0);
+            const [s4_bottles, setS4_bottles] = useState(0);
+            const [s5_clean, setS5_clean] = useState(0);
+
+            useEffect(() => { lucide.createIcons(); }, [step, s1_temp, s2_bacteria, s3_progress, s4_bottles, s5_clean, taskCompleted]);
+
+            useEffect(() => {
+                setTaskCompleted(false);
+                setS0_milk(false);
+                setS0_sugar(false);
+                setS1_temp(25);
+                setS2_bacteria(0);
+                setS3_progress(0);
+                setS4_bottles(0);
+                setS5_clean(0);
+            }, [step]);
+
+            useEffect(() => {
+                if (step === 0 && s0_milk && s0_sugar) setTaskCompleted(true);
+                if (step === 1 && s1_temp >= 100) setTaskCompleted(true);
+                if (step === 2 && s2_bacteria >= 5) setTaskCompleted(true);
+                if (step === 4 && s4_bottles >= 3) setTaskCompleted(true);
+                if (step === 5 && s5_clean >= 100) setTaskCompleted(true);
+            }, [step, s0_milk, s0_sugar, s1_temp, s2_bacteria, s4_bottles, s5_clean]);
+
+            const steps = [
+                {
+                title: "準備培養基",
+                kidTitle: "調配專屬營養大餐",
+                desc: "工廠會把脫脂奶粉、糖和過濾水混合在一起，煮成一鍋營養豐富的甜牛奶，準備給「代田菌」吃。",
+                sciDesc: "為微生物接種與生產提供所需的營養源。",
+                icon: <Beaker size={40} className="text-orange-500" />,
+                bg: "bg-orange-50"
+                },
+                {
+                title: "滅菌處理",
+                kidTitle: "徹底高溫大掃除",
+                desc: "高溫煮沸消毒把環境裡其他壞細菌殺死，防止牠們來搶食物。如果不這麼做，其他雜菌混進去，益力多就會壞掉。",
+                sciDesc: "嚴格殺菌，確保培養基、發酵槽及管線的無菌狀態，防止雜菌污染。",
+                icon: <ThermometerSun size={40} className="text-red-500" />,
+                bg: "bg-red-50"
+                },
+                {
+                title: "培養菌種",
+                kidTitle: "挑選最強先鋒部隊",
+                desc: "在實驗室裡，先養出一批最健康、數量夠多的純種「代田菌」，確保每隻都能好好工作。",
+                sciDesc: "接種與擴培：培養足夠數量、純度高且活躍的初始菌種並注入發酵槽。",
+                icon: <Microscope size={40} className="text-purple-500" />,
+                bg: "bg-purple-50"
+                },
+                {
+                title: "生產發酵",
+                kidTitle: "開發酵派對",
+                desc: "把代田菌放進巨大的恆溫水槽。牠們會努力吃掉牛奶裡的糖分後，會產生「乳酸」，讓原本甜甜的牛奶變成帶有酸味的發酵乳。",
+                sciDesc: "在最佳條件下（如控制合適的溫度、pH 值與溶氧量）讓微生物生長並產生目標產物。",
+                icon: <Factory size={40} className="text-blue-500" />,
+                bg: "bg-blue-50"
+                },
+                {
+                title: "提取與純化",
+                kidTitle: "變身與裝瓶",
+                desc: "發酵完成後進行過濾，加入果糖調味，最後無菌狀態下裝進小瓶子裡封口。",
+                sciDesc: "從發酵液中分離並精煉出最終產物。",
+                icon: <Droplets size={40} className="text-cyan-500" />,
+                bg: "bg-cyan-50"
+                },
+                {
+                title: "廢棄物處理",
+                kidTitle: "環保小衛士",
+                desc: "工廠產生的廢水不能隨便倒掉，必須經過污水處理系統過濾，確認沒有污染才能排入大自然。",
+                sciDesc: "妥善處理發酵過程產生的廢水及廢棄物，保護環境。",
+                icon: <Recycle size={40} className="text-green-500" />,
+                bg: "bg-green-50"
+                }
+            ];
+
+            const renderVisuals = () => {
+                switch(step) {
+                case 0: return (
+                    <div className="relative w-32 h-40 border-4 border-slate-400 rounded-b-2xl border-t-0 flex flex-col justify-end overflow-hidden bg-slate-50">
+                    <div className={`w-full transition-all duration-700 bg-yellow-200/80 ${s0_sugar ? 'h-1/2' : 'h-0'}`}></div>
+                    <div className={`w-full transition-all duration-700 bg-white ${s0_milk ? 'h-1/2' : 'h-0'}`}></div>
+                    </div>
+                );
+                case 1: return (
+                    <div className={`relative w-32 h-40 border-4 border-slate-400 rounded-b-2xl border-t-0 flex flex-col justify-end overflow-hidden transition-colors duration-1000 ${s1_temp >= 100 ? 'bg-red-200' : 'bg-orange-100'}`}>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <ThermometerSun size={40} className={s1_temp >= 100 ? 'text-red-600 animate-pulse' : 'text-slate-400'} />
+                        <span className={`font-bold text-xl mt-2 ${s1_temp >= 100 ? 'text-red-700' : 'text-slate-500'}`}>{s1_temp}°C</span>
+                    </div>
+                    </div>
+                );
+                case 2: return (
+                    <div className="relative w-32 h-40 border-4 border-slate-400 rounded-b-2xl border-t-0 bg-yellow-100 flex flex-wrap content-end justify-center p-3 gap-2 overflow-hidden">
+                    {Array.from({length: s2_bacteria}).map((_, i) => (
+                        <Bug key={i} className="text-purple-600 animate-bounce" size={24} />
+                    ))}
+                    {s2_bacteria === 0 && <span className="text-slate-400 text-sm mb-4 font-bold">等待加入菌種...</span>}
+                    </div>
+                );
+                case 3: return (
+                    <div className={`relative w-32 h-40 border-4 border-slate-400 rounded-b-2xl border-t-0 flex flex-col justify-end overflow-hidden transition-colors duration-1000`} style={{backgroundColor: s3_progress > 80 ? '#fde68a' : '#ffedd5'}}>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+                        <span className="font-bold text-2xl text-slate-700">{s3_progress}%</span>
+                        {s3_progress > 0 && s3_progress < 100 && <Droplets className="text-blue-500 animate-bounce mt-2" />}
+                    </div>
+                    <div className="w-full bg-yellow-400/40 transition-all duration-300" style={{height: `${s3_progress}%`}}></div>
+                    </div>
+                );
+                case 4: return (
+                    <div className="flex gap-3 items-end h-32">
+                    {[1,2,3].map(b => (
+                        <div key={b} className={`relative w-12 h-24 border-4 rounded-t-xl rounded-b-md flex flex-col justify-end overflow-hidden transition-all duration-300 ${s4_bottles >= b ? 'border-orange-500 bg-orange-50' : 'border-slate-300 bg-white'}`}>
+                        <div className={`w-full bg-orange-300 transition-all duration-700 ${s4_bottles >= b ? 'h-3/4' : 'h-0'}`}></div>
+                        {s4_bottles >= b && <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-orange-900 text-xs font-bold">益</div>}
+                        </div>
+                    ))}
+                    </div>
+                );
+                case 5: return (
+                    <div className="flex items-center gap-4">
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="w-16 h-16 rounded-full border-4 border-slate-300 flex items-center justify-center transition-colors duration-1000 shadow-inner" style={{backgroundColor: s5_clean >= 100 ? '#bfdbfe' : '#a16207'}}>
+                        <Droplets className="text-white" size={32} />
+                        </div>
+                        <span className="font-bold text-sm text-slate-600">{s5_clean >= 100 ? '清澈水' : '廢污水'}</span>
+                    </div>
+                    <div className="w-16 h-4 bg-slate-200 rounded-full overflow-hidden relative shadow-inner">
+                        <div className="h-full bg-green-500 transition-all duration-300" style={{width: `${s5_clean}%`}}></div>
+                    </div>
+                    <Recycle size={32} className={`text-green-600 ${s5_clean > 0 && s5_clean < 100 ? 'animate-spin' : ''}`} />
+                    </div>
+                );
+                default: return null;
+                }
+            };
+
+            const renderControls = () => {
+                switch(step) {
+                case 0: return (
+                    <React.Fragment>
+                    <button onClick={() => setS0_milk(true)} disabled={s0_milk} className={`px-4 py-2 rounded-lg font-bold border-2 ${s0_milk ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-white border-blue-400 text-blue-600 hover:bg-blue-50'}`}>+ 加入脫脂奶粉</button>
+                    <button onClick={() => setS0_sugar(true)} disabled={s0_sugar} className={`px-4 py-2 rounded-lg font-bold border-2 ${s0_sugar ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-white border-yellow-400 text-yellow-600 hover:bg-yellow-50'}`}>+ 加入糖水</button>
+                    </React.Fragment>
+                );
+                case 1: return (
+                    <button onClick={() => setS1_temp(Math.min(100, s1_temp + 25))} disabled={s1_temp >= 100} className="px-6 py-2 rounded-lg font-bold bg-red-500 text-white hover:bg-red-600 active:scale-95 disabled:bg-slate-300 flex items-center gap-2">
+                    <Flame size={20} /> 點擊加熱消毒
+                    </button>
+                );
+                case 2: return (
+                    <button onClick={() => setS2_bacteria(s2_bacteria + 1)} disabled={s2_bacteria >= 5} className="px-6 py-2 rounded-lg font-bold bg-purple-500 text-white hover:bg-purple-600 active:scale-95 disabled:bg-slate-300 flex items-center gap-2">
+                    <Bug size={20} /> 繁殖代田菌
+                    </button>
+                );
+                case 3: return (
+                    <button onClick={() => {
+                    if (s3_progress > 0) return;
+                    let p = 0;
+                    const timer = setInterval(() => {
+                        p += 10;
+                        setS3_progress(p);
+                        if (p >= 100) {
+                        clearInterval(timer);
+                        setTaskCompleted(true);
+                        }
+                    }, 300);
+                    }} disabled={s3_progress > 0} className="px-6 py-2 rounded-lg font-bold bg-blue-500 text-white hover:bg-blue-600 active:scale-95 disabled:bg-slate-300 flex items-center gap-2">
+                    <Play size={20} /> 開始發酵計時
+                    </button>
+                );
+                case 4: return (
+                    <button onClick={() => setS4_bottles(s4_bottles + 1)} disabled={s4_bottles >= 3} className="px-6 py-2 rounded-lg font-bold bg-orange-500 text-white hover:bg-orange-600 active:scale-95 disabled:bg-slate-300 flex items-center gap-2">
+                    <Package size={20} /> 填充一瓶
+                    </button>
+                );
+                case 5: return (
+                    <button onClick={() => setS5_clean(Math.min(100, s5_clean + 34))} disabled={s5_clean >= 100} className="px-6 py-2 rounded-lg font-bold bg-green-500 text-white hover:bg-green-600 active:scale-95 disabled:bg-slate-300 flex items-center gap-2">
+                    <ShieldCheck size={20} /> 啟動過濾系統
+                    </button>
+                );
+                default: return null;
+                }
+            };
+
+            return (
+                <div className="p-8 flex flex-col min-h-[600px] animate-in fade-in duration-500">
+                <h2 className="text-3xl font-extrabold text-blue-800 mb-6 text-center">工廠發酵 6 大步驟</h2>
+                
+                <div className="flex justify-between mb-8 relative">
+                    <div className="absolute top-1/2 left-0 w-full h-2 bg-slate-200 -z-10 transform -translate-y-1/2"></div>
+                    <div className="absolute top-1/2 left-0 h-2 bg-green-500 -z-10 transform -translate-y-1/2 transition-all duration-500" style={{ width: `${(step / 5) * 100}%` }}></div>
+                    {steps.map((_, i) => (
+                    <div key={i} className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg border-4 transition-colors duration-300 ${i <= step ? 'bg-green-500 border-green-200 text-white' : 'bg-white border-slate-300 text-slate-400'}`}>
+                        {i + 1}
+                    </div>
+                    ))}
+                </div>
+
+                <div className={`flex-grow grid grid-cols-1 md:grid-cols-2 gap-8 p-6 rounded-3xl ${steps[step].bg} transition-colors duration-500 border-2 border-opacity-50`}>
+                    
+                    <div className="flex flex-col justify-center">
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-md shrink-0">
+                            {steps[step].icon}
+                        </div>
+                        <div>
+                            <div className="bg-white/80 inline-block px-3 py-1 rounded-full font-bold text-xs mb-1 text-slate-600">步驟 {step + 1}</div>
+                            <h3 className="text-2xl font-bold">{steps[step].kidTitle}</h3>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-white p-4 rounded-xl shadow-sm mb-3 text-slate-700">
+                        <p className="text-lg leading-relaxed"><strong>魔法過程：</strong><br/>{steps[step].desc}</p>
+                    </div>
+                    <p className="text-sm text-slate-500 italic bg-white/50 p-2 rounded-lg"><strong>科學定義：</strong>{steps[step].title} - {steps[step].sciDesc}</p>
+                    </div>
+
+                    <div className="bg-white/80 backdrop-blur rounded-2xl p-4 shadow-sm border-2 border-dashed border-slate-300 flex flex-col relative min-h-[300px]">
+                    {taskCompleted && (
+                        <div className="absolute top-3 right-3 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 z-20 animate-in zoom-in shadow-sm">
+                            <CheckCircle2 size={16} /> 任務完成
+                        </div>
+                    )}
+                    <h4 className="font-bold text-slate-700 mb-2 flex items-center gap-2 justify-center pb-2 border-b border-slate-200">
+                        <Play size={18} className="text-blue-500"/> 互動模擬器
+                    </h4>
+                    
+                    <div className="flex-grow flex items-center justify-center p-4 bg-slate-50/50 rounded-xl mb-4">
+                        {renderVisuals()}
+                    </div>
+                    
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                        {renderControls()}
+                    </div>
+                    </div>
+
+                </div>
+
+                <div className="flex justify-between mt-6">
+                    <button 
+                    onClick={() => setStep(Math.max(0, step - 1))}
+                    disabled={step === 0}
+                    className="px-6 py-3 rounded-full font-bold text-slate-600 bg-slate-200 hover:bg-slate-300 disabled:opacity-50 transition-colors"
+                    >
+                    上一步
+                    </button>
+                    {step < 5 ? (
+                    <button 
+                        onClick={() => setStep(step + 1)}
+                        disabled={!taskCompleted}
+                        className={`px-8 py-3 rounded-full font-bold flex items-center gap-2 transition-all duration-300 ${taskCompleted ? 'text-white bg-blue-500 hover:bg-blue-600 shadow-md animate-bounce' : 'text-slate-400 bg-slate-200 cursor-not-allowed'}`}
+                    >
+                        {taskCompleted ? '前往下一步' : '請先完成模擬任務'} <ChevronRight />
+                    </button>
+                    ) : (
+                    <button 
+                        onClick={onNext}
+                        disabled={!taskCompleted}
+                        className={`px-8 py-3 rounded-full font-bold flex items-center gap-2 transition-all duration-300 ${taskCompleted ? 'text-white bg-orange-500 hover:bg-orange-600 shadow-md animate-pulse' : 'text-slate-400 bg-slate-200 cursor-not-allowed'}`}
+                    >
+                        {taskCompleted ? '去看看應用' : '請先完成模擬任務'} <ChevronRight />
+                    </button>
+                    )}
+                </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // Scene 3: Applications of Fermentation
+        // ==========================================
+        function ApplicationsScene({ onNext }) {
+            useEffect(() => { lucide.createIcons(); }, []);
+            return (
+                <div className="p-8 min-h-[600px] flex flex-col animate-in fade-in duration-500">
+                <h2 className="text-3xl font-extrabold text-blue-800 mb-6 text-center">發酵的兩大應用</h2>
+                
+                <div className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-8">
+                    
+                    <div className="bg-amber-50 border-4 border-amber-200 rounded-3xl p-6 flex flex-col relative overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <h3 className="text-2xl font-bold text-amber-700 mb-4 flex items-center gap-2 z-10">
+                        <span className="text-4xl">🍞</span> 製造食物
+                    </h3>
+                    
+                    <div className="space-y-4 z-10">
+                        <div className="bg-white/90 p-4 rounded-2xl shadow-sm border border-amber-100 hover:scale-[1.02] transition-transform">
+                        <h4 className="font-bold text-lg text-amber-600 mb-2 flex items-center gap-2">
+                            🥐 麵包膨脹
+                        </h4>
+                        <p className="text-slate-700 leading-relaxed text-sm">
+                            酵母菌吃掉麵團裡的糖，排出「二氧化碳」氣體，讓麵包像吹氣球一樣變大變軟。
+                        </p>
+                        </div>
+                        
+                        <div className="bg-white/90 p-4 rounded-2xl shadow-sm border border-amber-100 hover:scale-[1.02] transition-transform">
+                        <h4 className="font-bold text-lg text-amber-600 mb-2 flex items-center gap-2">
+                            🍷 酒精飲料
+                        </h4>
+                        <p className="text-slate-700 leading-relaxed text-sm">
+                            酵母菌發酵後產生的另一種物質就是「乙醇（酒精）」，這就是大人喝的酒的由來。
+                        </p>
+                        </div>
+                    </div>
+                    <div className="absolute -bottom-6 -right-6 text-9xl opacity-10 rotate-12 pointer-events-none">🥖</div>
+                    </div>
+
+                    <div className="bg-emerald-50 border-4 border-emerald-200 rounded-3xl p-6 flex flex-col relative overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <h3 className="text-2xl font-bold text-emerald-700 mb-4 flex items-center gap-2 z-10">
+                        <span className="text-4xl">⚡</span> 產生能源
+                    </h3>
+                    
+                    <div className="bg-white/90 p-4 rounded-2xl shadow-sm border border-emerald-100 z-10">
+                        <h4 className="font-bold text-lg text-emerald-600 mb-2 flex items-center gap-2">
+                        🌿 環保燃料
+                        </h4>
+                        <p className="text-slate-700 leading-relaxed text-sm">
+                        科學家利用大型微生物發酵來分解有機垃圾，製造出<strong>氫氣</strong>和<strong>甲烷</strong>。這些氣體可以代替石油用來發電或當作車子燃料，非常環保！
+                        </p>
+                    </div>
+                    
+                    <div className="mt-6 flex-grow flex items-center justify-center gap-2 z-10">
+                        <div className="flex flex-col items-center">
+                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-md animate-bounce border-2 border-emerald-100">
+                            <span className="text-3xl">🗑️</span>
+                        </div>
+                        <span className="text-xs font-bold text-emerald-600 mt-2">有機垃圾</span>
+                        </div>
+                        
+                        <div className="flex flex-col items-center mx-2 animate-pulse text-emerald-400">
+                            <span className="text-2xl">➡️</span>
+                            <span className="text-[10px] font-bold">發酵變身</span>
+                        </div>
+                        
+                        <div className="flex flex-col items-center">
+                        <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center shadow-md border-2 border-emerald-300 relative">
+                            <span className="text-4xl">🚗</span>
+                            <span className="absolute -bottom-2 -right-2 text-xl">🌱</span>
+                        </div>
+                        <span className="text-xs font-bold text-emerald-700 mt-2">環保車輛發電</span>
+                        </div>
+                    </div>
+                    <div className="absolute -bottom-6 -right-6 text-9xl opacity-10 -rotate-12 pointer-events-none">🔋</div>
+                    </div>
+
+                </div>
+
+                <div className="flex justify-end mt-8">
+                    <button 
+                    onClick={onNext}
+                    className="px-8 py-3 rounded-full font-bold text-white bg-blue-500 hover:bg-blue-600 flex items-center gap-2 shadow-md hover:scale-105 transition-transform"
+                    >
+                    前往氣球實驗室 <ChevronRight />
+                    </button>
+                </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // Scene 4: Balloon Experiment
+        // ==========================================
+        function ExperimentScene({ onNext }) {
+            const [ingredients, setIngredients] = useState({ water: false, yeast: false, sugar: false });
+            const [status, setStatus] = useState('準備中');
+            const [balloonSize, setBalloonSize] = useState(1);
+
+            useEffect(() => { lucide.createIcons(); }, [status, balloonSize, ingredients]);
+
+            const addIngredient = (item) => {
+                setIngredients(prev => ({ ...prev, [item]: true }));
+            };
+
+            const resetExperiment = () => {
+                setIngredients({ water: false, yeast: false, sugar: false });
+                setStatus('準備中');
+                setBalloonSize(1);
+            };
+
+            const runExperiment = () => {
+                if (!ingredients.water || !ingredients.yeast) {
+                setStatus('錯誤：必須要有溫水和酵母才能開始！');
+                return;
+                }
+                
+                if (ingredients.sugar) {
+                setStatus('發酵中... 酵母菌正在吃糖！');
+                let size = 1;
+                const interval = setInterval(() => {
+                    size += 0.2;
+                    setBalloonSize(size);
+                    if (size >= 2.5) {
+                    clearInterval(interval);
+                    setStatus('成功！酵母菌排出了二氧化碳，吹脹了氣球！');
+                    }
+                }, 300);
+                } else {
+                setStatus('觀察中...');
+                setTimeout(() => {
+                    setStatus('失敗！氣球沒有變大。因為酵母菌沒有「糖」做食物，肚餓沒力氣產生氣體！');
+                }, 1500);
+                }
+            };
+
+            return (
+                <div className="p-8 h-[600px] flex flex-col animate-in fade-in duration-500">
+                <h2 className="text-3xl font-extrabold text-blue-800 mb-2 text-center">酵母菌的呼吸魔法</h2>
+                <p className="text-center text-slate-500 mb-6">探究問題：如果不加糖，氣球還會變大嗎？試試看！</p>
+
+                <div className="flex-grow flex gap-8">
+                    <div className="flex-1 bg-slate-50 rounded-3xl border-2 border-slate-200 flex flex-col items-center justify-end pb-8 relative overflow-hidden shadow-inner">
+                    
+                    <div className="absolute top-4 left-4 right-4 bg-white/90 p-3 rounded-xl text-center font-bold text-blue-800 shadow-sm border border-blue-100 z-20">
+                        {status}
+                    </div>
+
+                    <div 
+                        className="w-16 h-20 bg-red-400 rounded-[50%] mb-[-10px] z-10 transition-all duration-300 origin-bottom flex items-center justify-center shadow-inner"
+                        style={{ transform: `scale(${balloonSize})` }}
+                    >
+                        {balloonSize > 1.5 && <Wind className="text-white/50" />}
+                    </div>
+                    
+                    <div className="w-24 h-40 bg-blue-50 border-4 border-blue-200 rounded-b-xl rounded-t-sm relative flex flex-col justify-end overflow-hidden z-0">
+                        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-8 h-8 border-4 border-blue-200 border-b-0"></div>
+                        
+                        <div className="w-full transition-all duration-500 flex flex-col justify-end" style={{ height: ingredients.water ? '50%' : '0%' }}>
+                        <div className="w-full h-full bg-blue-300/50 relative">
+                            {ingredients.sugar && <div className="absolute bottom-0 w-full h-4 bg-white/60"></div>}
+                            {ingredients.yeast && <div className="absolute bottom-4 w-full h-4 bg-yellow-600/60"></div>}
+                        </div>
+                        </div>
+                    </div>
+                    </div>
+
+                    <div className="w-1/3 flex flex-col gap-4">
+                    <div className="bg-white p-4 rounded-2xl shadow-sm border">
+                        <h3 className="font-bold mb-3">步驟 1：加入材料</h3>
+                        <button 
+                        onClick={() => addIngredient('water')} disabled={ingredients.water}
+                        className={`w-full py-2 mb-2 rounded-lg font-bold border-2 transition-colors ${ingredients.water ? 'bg-blue-100 border-blue-300 text-blue-400' : 'bg-blue-50 hover:bg-blue-100 border-blue-300 text-blue-700'}`}
+                        >
+                        {ingredients.water ? '✓ 已加溫水' : '+ 加入溫水'}
+                        </button>
+                        <button 
+                        onClick={() => addIngredient('yeast')} disabled={ingredients.yeast}
+                        className={`w-full py-2 mb-2 rounded-lg font-bold border-2 transition-colors ${ingredients.yeast ? 'bg-yellow-100 border-yellow-300 text-yellow-500' : 'bg-yellow-50 hover:bg-yellow-100 border-yellow-300 text-yellow-700'}`}
+                        >
+                        {ingredients.yeast ? '✓ 已加乾酵母' : '+ 加入乾酵母'}
+                        </button>
+                        <button 
+                        onClick={() => addIngredient('sugar')} disabled={ingredients.sugar}
+                        className={`w-full py-2 rounded-lg font-bold border-2 transition-colors ${ingredients.sugar ? 'bg-slate-100 border-slate-300 text-slate-400' : 'bg-white hover:bg-slate-50 border-slate-300 text-slate-700'}`}
+                        >
+                        {ingredients.sugar ? '✓ 已加砂糖' : '+ 加入砂糖 (食物)'}
+                        </button>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-2xl shadow-sm border flex-grow flex flex-col justify-center">
+                        <h3 className="font-bold mb-3">步驟 2：開始觀察</h3>
+                        <button 
+                        onClick={runExperiment}
+                        className="w-full py-4 rounded-xl font-bold text-white bg-green-500 hover:bg-green-600 flex items-center justify-center gap-2 mb-3 shadow-md active:scale-95 transition-transform"
+                        >
+                        <Play /> 套上氣球並靜置
+                        </button>
+                        <button 
+                        onClick={resetExperiment}
+                        className="w-full py-2 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 flex items-center justify-center gap-2 transition-colors"
+                        >
+                        <RefreshCcw size={18} /> 重新實驗
+                        </button>
+                    </div>
+                    </div>
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                    <button 
+                    onClick={onNext}
+                    className="px-8 py-3 rounded-full font-bold text-white bg-orange-500 hover:bg-orange-600 flex items-center gap-2 shadow-md hover:scale-105 transition-transform"
+                    >
+                    去挑戰小測驗 <ChevronRight />
+                    </button>
+                </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // Scene 5: Quiz
+        // ==========================================
+        function QuizScene({ onRestart }) {
+            const [currentQ, setCurrentQ] = useState(0);
+            const [score, setScore] = useState(0);
+            const [showResult, setShowResult] = useState(false);
+            const [feedback, setFeedback] = useState(null);
+
+            useEffect(() => { lucide.createIcons(); }, [currentQ, showResult, feedback]);
+
+            const questions = [
+                {
+                q: "科學上，發酵是微生物透過體內的什麼來分解食物產生變化？",
+                options: ["A. 牙齒", "B. 酶 (酵素)", "C. 胃酸", "D. 觸角"],
+                ans: 1
+                },
+                {
+                q: "在益力多工廠中，為什麼必須進行「滅菌處理」高溫大掃除？",
+                options: ["A. 為了讓牛奶變暖更好喝", "B. 殺死壞細菌，防止雜菌污染", "C. 為了把糖分溶解", "D. 幫機器洗澡"],
+                ans: 1
+                },
+                {
+                q: "吹氣球實驗中，氣球自己變大了，是因為酵母菌發酵時排出了什麼氣體？",
+                options: ["A. 氧氣", "B. 氫氣", "C. 二氧化碳", "D. 天然氣"],
+                ans: 2
+                },
+                {
+                q: "如果吹氣球實驗中「不加糖」，氣球會變大嗎？",
+                options: ["A. 會，因為有水就可以", "B. 會，酵母菌自己會產生氣體", "C. 不會，因為沒有攪拌", "D. 不會，因為糖是酵母菌的食物"],
+                ans: 3
+                }
+            ];
+
+            const handleAnswer = (index) => {
+                if (feedback !== null) return;
+                
+                if (index === questions[currentQ].ans) {
+                setScore(score + 1);
+                setFeedback('correct');
+                } else {
+                setFeedback('incorrect');
+                }
+
+                setTimeout(() => {
+                setFeedback(null);
+                if (currentQ < questions.length - 1) {
+                    setCurrentQ(currentQ + 1);
+                } else {
+                    setShowResult(true);
+                }
+                }, 1500);
+            };
+
+            if (showResult) {
+                return (
+                <div className="p-12 text-center h-[600px] flex flex-col justify-center items-center animate-in zoom-in duration-500">
+                    <Award size={80} className={score > 2 ? "text-yellow-500 mb-4" : "text-slate-400 mb-4"} />
+                    <h2 className="text-4xl font-extrabold text-blue-800 mb-4">測驗完成！</h2>
+                    <p className="text-2xl mb-8">你的得分：<span className="text-5xl font-bold text-orange-500 mx-2">{score}</span> / {questions.length}</p>
+                    
+                    {score === questions.length ? (
+                    <p className="text-xl text-green-600 font-bold mb-8">太厲害了！你已經是首席發酵小科學家！</p>
+                    ) : (
+                    <p className="text-xl text-blue-600 font-bold mb-8">表現不錯！有空可以再複習一下工廠的步驟喔！</p>
+                    )}
+
+                    <button 
+                    onClick={onRestart}
+                    className="bg-blue-600 hover:bg-blue-700 text-white text-xl font-bold py-4 px-10 rounded-full shadow-lg transform hover:scale-105 transition-all flex items-center gap-2"
+                    >
+                    <RefreshCcw /> 再玩一次
+                    </button>
+                </div>
+                );
+            }
+
+            return (
+                <div className="p-10 h-[600px] flex flex-col animate-in fade-in">
+                <div className="flex justify-between items-center mb-8">
+                    <h2 className="text-3xl font-extrabold text-blue-800">知識小測驗</h2>
+                    <span className="bg-blue-100 text-blue-800 px-4 py-2 rounded-full font-bold">
+                    第 {currentQ + 1} / {questions.length} 題
+                    </span>
+                </div>
+
+                <div className="bg-white border-4 border-blue-100 p-8 rounded-3xl flex-grow flex flex-col justify-center relative shadow-sm">
+                    <h3 className="text-2xl font-bold mb-8 leading-relaxed text-slate-700">
+                    {questions[currentQ].q}
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {questions[currentQ].options.map((opt, i) => {
+                        let btnClass = "bg-slate-50 hover:bg-blue-50 border-2 border-slate-200 text-slate-700";
+                        if (feedback !== null) {
+                        if (i === questions[currentQ].ans) {
+                            btnClass = "bg-green-100 border-green-500 text-green-800 font-bold";
+                        } else if (feedback === 'incorrect' && i !== questions[currentQ].ans) {
+                            btnClass = "opacity-50 border-slate-200 bg-slate-50";
+                        }
+                        }
+
+                        return (
+                        <button 
+                            key={i}
+                            onClick={() => handleAnswer(i)}
+                            className={`p-4 rounded-2xl text-left text-lg transition-all duration-300 ${btnClass}`}
+                        >
+                            {opt}
+                        </button>
+                        );
+                    })}
+                    </div>
+
+                    {feedback === 'correct' && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-3xl z-10 animate-in zoom-in">
+                        <div className="text-green-500 flex flex-col items-center">
+                        <CheckCircle2 size={80} className="mb-2" />
+                        <span className="text-3xl font-bold">答對了！</span>
+                        </div>
+                    </div>
+                    )}
+                    {feedback === 'incorrect' && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-3xl z-10 animate-in zoom-in">
+                        <div className="text-red-500 flex flex-col items-center">
+                        <span className="text-7xl font-bold mb-2">✗</span>
+                        <span className="text-3xl font-bold">再接再厲！</span>
+                        </div>
+                    </div>
+                    )}
+                </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
